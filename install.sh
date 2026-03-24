@@ -8,7 +8,7 @@ cd "$DOTFILES"
 SHARED="git fish zsh tmux nvim lazygit"
 
 # macOS-only packages
-MACOS="karabiner kanata claude"
+MACOS="karabiner kanata claude kitty"
 
 # Linux-only packages
 LINUX=""
