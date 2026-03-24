@@ -5,7 +5,7 @@ DOTFILES="$(cd "$(dirname "$0")" && pwd)"
 cd "$DOTFILES"
 
 # Shared packages (all devices)
-SHARED="git fish zsh tmux nvim lazygit kitty"
+SHARED="git fish zsh tmux nvim lazygit kitty ohmyposh"
 
 # macOS-only packages
 MACOS="karabiner kanata claude"
