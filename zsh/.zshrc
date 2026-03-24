@@ -34,12 +34,6 @@ if command -v oh-my-posh >/dev/null 2>&1; then
   eval "$(oh-my-posh init zsh --config "$HOME/.config/ohmyposh/base.toml")"
 fi
 
-# zoxide (smart cd)
-if command -v zoxide >/dev/null 2>&1; then
-  eval "$(zoxide init zsh)"
-  alias cd="z"
-fi
-
 # yazi (file manager with cwd sync)
 function yy() {
   if ! command -v yazi >/dev/null 2>&1; then
@@ -73,3 +67,9 @@ knx() {
 # short aliases
 alias c="clear"
 alias q="exit"
+
+# zoxide (smart cd) — must be last
+if command -v zoxide >/dev/null 2>&1; then
+  eval "$(zoxide init zsh)"
+  alias cd="z"
+fi
