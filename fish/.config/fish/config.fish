@@ -19,8 +19,8 @@ abbr -a tl "tmux ls"
 # ── Aliases ────────────────────────────────────────────────────────
 alias vim="nvim"
 alias cat="bat --style=numbers --paging=never"
-alias claude="/Users/nikhilsharma/.claude/local/claude"
-alias cc="/Users/nikhilsharma/.claude/local/claude --dangerously-skip-permissions --plugin-dir ~/.claude/plugins/codex-commit"
+alias claude="$HOME/.claude/local/claude"
+alias cc="$HOME/.claude/local/claude --dangerously-skip-permissions --plugin-dir ~/.claude/plugins/codex-commit"
 alias co="codex --dangerously-bypass-approvals-and-sandbox"
 
 # ── Environment Variables ──────────────────────────────────────────
@@ -172,4 +172,4 @@ end
 source ~/.orbstack/shell/init2.fish 2>/dev/null || :
 
 # opencode
-fish_add_path /Users/nikhilsharma/.opencode/bin
+fish_add_path $HOME/.opencode/bin
