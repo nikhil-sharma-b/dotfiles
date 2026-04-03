@@ -1,0 +1,16 @@
+# Linux / Omarchy-only config
+{{- if ne .chezmoi.os "linux" }}
+.config/hypr/**
+.config/waybar/**
+{{- end }}
+
+# macOS-only config
+{{- if ne .chezmoi.os "darwin" }}
+.config/karabiner/**
+.config/kanata/**
+.claude/**
+{{- end }}
+
+# Omarchy runtime state should stay local
+.config/omarchy/current/**
+.config/omarchy/themed/**

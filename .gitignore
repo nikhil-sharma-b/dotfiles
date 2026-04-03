@@ -1,13 +1,5 @@
-# Neovim generated/cache files
-nvim/.config/nvim/lazy-lock.json
-nvim/.config/nvim/.luarc.json
-
-# Tmux plugin binaries
-tmux/.config/tmux/plugins/
-
-# Fish completions and variables (auto-generated)
-fish/.config/fish/completions/
-fish/.config/fish/fish_variables
-
-# Karabiner auto-backups
-karabiner/.config/karabiner/automatic_backups/
+.DS_Store
+dot_config/hypr/*.bak.*
+dot_config/nvim/.neoconf.json
+dot_config/fish/fish_variables
+dot_config/fish/completions/

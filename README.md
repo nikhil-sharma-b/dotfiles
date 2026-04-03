@@ -1,45 +1,72 @@
 # dotfiles
 
-My configs, managed with [GNU Stow](https://www.gnu.org/software/stow/).
+My dotfiles, managed with [chezmoi](https://www.chezmoi.io/).
+
+This repo uses chezmoi source-state naming, so `dot_config/hypr/hyprland.conf`
+becomes `~/.config/hypr/hyprland.conf` on the target machine.
 
 ## Setup on a new device
 
 ```bash
-# 1. Install stow
+# Install chezmoi
 # macOS
-brew install stow
-# Debian/Ubuntu
-sudo apt install stow
+brew install chezmoi
 
-# 2. Clone and install
-git clone https://github.com/nikhil-sharma-b/dotfiles ~/repos/dotfiles
-cd ~/repos/dotfiles
-./install.sh
+# Linux
+sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
+
+# Initialize from this repo
+chezmoi init https://github.com/nikhil-sharma-b/dotfiles
+
+# Review and apply
+chezmoi diff
+chezmoi apply
 ```
 
-The install script auto-detects the OS and stows the right packages.
+## Current layout
 
-## Packages
+Shared configs:
 
-| Package    | What                        | Devices |
-|------------|-----------------------------|---------|
-| git        | `.gitconfig`                | all     |
-| fish       | Fish shell config           | all     |
-| zsh        | Zsh config                  | all     |
-| tmux       | Tmux config                 | all     |
-| nvim       | Neovim (LazyVim)            | all     |
-| lazygit    | Lazygit config              | all     |
-| kitty      | Kitty terminal              | all     |
-| claude     | Claude Code settings        | macOS   |
-| karabiner  | Karabiner-Elements          | macOS   |
-| kanata     | Kanata keyboard remapper    | macOS   |
+- `dot_config/fish/`
+- `dot_config/git/config`
+- `dot_config/kitty/kitty.conf`
+- `dot_config/lazygit/config.yml`
+- `dot_config/nvim/`
+- `dot_config/tmux/tmux.conf`
 
-## Manual stowing
+Linux / Omarchy configs:
 
-To stow individual packages:
+- `dot_config/hypr/`
+- `dot_config/waybar/`
+
+macOS-only configs are not added yet. When you are on your Mac, add them with
+`chezmoi add`, for example:
 
 ```bash
-cd ~/repos/dotfiles
-stow -t ~ <package>       # install
-stow -t ~ -D <package>    # uninstall
+chezmoi add ~/.config/karabiner/karabiner.json
+chezmoi add ~/.claude/settings.json
 ```
+
+## Workflow
+
+```bash
+# Track an existing file
+chezmoi add ~/.config/hypr/bindings.conf
+
+# Edit a managed file
+chezmoi edit ~/.config/waybar/config.jsonc
+
+# Preview changes
+chezmoi diff
+
+# Apply changes
+chezmoi apply
+```
+
+## Omarchy notes
+
+- Track user-owned config in `~/.config/`.
+- Do not track `~/.config/omarchy/current/` or `~/.config/omarchy/themed/`.
+- Do not edit anything in `~/.local/share/omarchy/`.
+- After changing Waybar config, run `omarchy-restart-waybar`.
+- Hyprland usually reloads automatically when its config files change.
