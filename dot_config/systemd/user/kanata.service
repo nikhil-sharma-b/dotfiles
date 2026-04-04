@@ -1,0 +1,12 @@
+[Unit]
+Description=Kanata keyboard remapper
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/kanata -c %h/.config/kanata/config.kbd
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=graphical-session.target
