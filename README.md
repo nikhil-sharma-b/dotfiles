@@ -39,8 +39,12 @@ Linux / Omarchy configs:
 - `dot_config/hypr/`
 - `dot_config/waybar/`
 
-macOS-only configs are not added yet. When you are on your Mac, add them with
-`chezmoi add`, for example:
+macOS-only configs:
+
+- `dot_config/aerospace/aerospace.toml`
+
+Other macOS-only configs are not added yet. When you are on your Mac, add them
+with `chezmoi add`, for example:
 
 ```bash
 chezmoi add ~/.config/karabiner/karabiner.json
