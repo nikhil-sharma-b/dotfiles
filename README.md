@@ -1,76 +1,52 @@
 # dotfiles
 
-My dotfiles, managed with [chezmoi](https://www.chezmoi.io/).
+My dotfiles, managed with [GNU Stow](https://www.gnu.org/software/stow/).
 
-This repo uses chezmoi source-state naming, so `dot_config/hypr/hyprland.conf`
-becomes `~/.config/hypr/hyprland.conf` on the target machine.
+This machine is installed with stow-style symlinks such as
+`~/.config/fish -> ~/repos/dotfiles/fish/.config/fish`. Keep those package
+directories present so existing configs do not become broken symlinks.
+
+The `dot_config/` tree contains chezmoi/Omarchy source-state configs from a
+separate Linux setup. It is not used by `install.sh` on this Mac.
 
 ## Setup on a new device
 
 ```bash
-# Install chezmoi
+# 1. Install stow
 # macOS
-brew install chezmoi
+brew install stow
 
-# Linux
-sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
+# Debian/Ubuntu
+sudo apt install stow
 
-# Initialize from this repo
-chezmoi init https://github.com/nikhil-sharma-b/dotfiles
-
-# Review and apply
-chezmoi diff
-chezmoi apply
+# 2. Clone and install
+git clone https://github.com/nikhil-sharma-b/dotfiles ~/repos/dotfiles
+cd ~/repos/dotfiles
+./install.sh
 ```
 
-## Current layout
+The install script auto-detects the OS and stows the right packages.
 
-Shared configs:
+## Packages
 
-- `dot_config/fish/`
-- `dot_config/git/config`
-- `dot_config/kitty/kitty.conf`
-- `dot_config/lazygit/config.yml`
-- `dot_config/nvim/`
-- `dot_config/tmux/tmux.conf`
+| Package   | What                 | Devices |
+|-----------|----------------------|---------|
+| git       | `.gitconfig`         | all     |
+| fish      | Fish shell config    | all     |
+| zsh       | Zsh config           | all     |
+| tmux      | Tmux config          | all     |
+| nvim      | Neovim config        | all     |
+| lazygit   | Lazygit config       | all     |
+| kitty     | Kitty terminal       | all     |
+| ohmyposh  | Oh My Posh theme     | all     |
+| claude    | Claude Code settings | macOS   |
+| karabiner | Karabiner-Elements   | macOS   |
+| kanata    | Kanata config        | macOS   |
 
-Linux / Omarchy configs:
-
-- `dot_config/hypr/`
-- `dot_config/waybar/`
-
-macOS-only configs:
-
-- `dot_config/aerospace/aerospace.toml`
-
-Other macOS-only configs are not added yet. When you are on your Mac, add them
-with `chezmoi add`, for example:
+## Manual stowing
 
 ```bash
-chezmoi add ~/.config/karabiner/karabiner.json
-chezmoi add ~/.claude/settings.json
+cd ~/repos/dotfiles
+stow -t "$HOME" <package>       # install
+stow -t "$HOME" -D <package>    # uninstall
 ```
-
-## Workflow
-
-```bash
-# Track an existing file
-chezmoi add ~/.config/hypr/bindings.conf
-
-# Edit a managed file
-chezmoi edit ~/.config/waybar/config.jsonc
-
-# Preview changes
-chezmoi diff
-
-# Apply changes
-chezmoi apply
-```
-
-## Omarchy notes
-
-- Track user-owned config in `~/.config/`.
-- Do not track `~/.config/omarchy/current/` or `~/.config/omarchy/themed/`.
-- Do not edit anything in `~/.local/share/omarchy/`.
-- After changing Waybar config, run `omarchy-restart-waybar`.
-- Hyprland usually reloads automatically when its config files change.
