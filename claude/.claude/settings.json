@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "model": "sonnet",
+  "model": "claude-fable-5[1m]",
   "enabledPlugins": {
     "frontend-design@claude-plugins-official": true,
     "feature-dev@claude-plugins-official": true,
@@ -10,6 +10,19 @@
     "plugin-dev@claude-plugins-official": true,
     "code-simplifier@claude-plugins-official": true,
     "clangd-lsp@claude-plugins-official": true
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Caveman mode active: invoke the caveman skill (Skill tool, skill: caveman) before your first response, then follow it every turn.'"
+          }
+        ]
+      }
+    ]
   },
   "alwaysThinkingEnabled": true,
   "effortLevel": "low",

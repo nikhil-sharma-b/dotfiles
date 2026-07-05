@@ -20,7 +20,7 @@ abbr -a tl "tmux ls"
 alias vim="nvim"
 alias cat="bat --style=numbers --paging=never"
 alias claude="$HOME/.local/bin/claude"
-alias cc="$HOME/.local/bin/claude --dangerously-skip-permissions --plugin-dir ~/.claude/plugins/codex-commit '/caveman'"
+alias cc="$HOME/.local/bin/claude --dangerously-skip-permissions --plugin-dir ~/.claude/plugins/codex-commit"
 alias co="codex --dangerously-bypass-approvals-and-sandbox"
 alias oc="opencode"
 
