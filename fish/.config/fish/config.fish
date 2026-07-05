@@ -19,9 +19,10 @@ abbr -a tl "tmux ls"
 # ── Aliases ────────────────────────────────────────────────────────
 alias vim="nvim"
 alias cat="bat --style=numbers --paging=never"
-alias claude="$HOME/.claude/local/claude"
-alias cc="$HOME/.claude/local/claude --dangerously-skip-permissions --plugin-dir ~/.claude/plugins/codex-commit"
+alias claude="$HOME/.local/bin/claude"
+alias cc="$HOME/.local/bin/claude --dangerously-skip-permissions --plugin-dir ~/.claude/plugins/codex-commit '/caveman'"
 alias co="codex --dangerously-bypass-approvals-and-sandbox"
+alias oc="opencode"
 
 # ── Environment Variables ──────────────────────────────────────────
 set -gx EDITOR nvim
@@ -49,7 +50,7 @@ set -gx BUN_INSTALL "$HOME/.bun"
 fish_add_path /opt/homebrew/bin
 
 # User tools
-fish_add_path $HOME/.claude/local
+fish_add_path $HOME/.local/bin
 fish_add_path $BUN_INSTALL/bin
 fish_add_path $HOME/Library/Python/3.9/bin
 fish_add_path $HOME/.console-ninja/.bin

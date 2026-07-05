@@ -21,8 +21,7 @@ export PATH="$PATH:/Users/nikhilsharma/.lmstudio/bin"
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
-alias claude="/Users/nikhilsharma/.claude/local/claude"
-alias cc="/Users/nikhilsharma/.claude/local/claude --dangerously-skip-permissions --plugin-dir ~/.claude/plugins/codex-commit"
+alias cc="/Users/nikhilsharma/.local/bin/claude --dangerously-skip-permissions --plugin-dir ~/.claude/plugins/codex-commit"
 alias co="codex --dangerously-bypass-approvals-and-sandbox"
 export PATH="/Applications/Windsurf.app/Contents/Resources/app/bin:$PATH"
 
