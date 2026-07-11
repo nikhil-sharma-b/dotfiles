@@ -1,13 +1,20 @@
 # Linux / Omarchy-only config
+README.md
+
 {{- if ne .chezmoi.os "linux" }}
 .config/hypr/**
 .config/waybar/**
+.config/systemd/**
 {{- end }}
 
 # macOS-only config
 {{- if ne .chezmoi.os "darwin" }}
+.aerospace.toml
 .config/karabiner/**
+.config/kanata/colemak.kbd
+.config/kanata/com.nikhilsharma.kanata.plist
 .claude/**
+.zshrc
 {{- end }}
 
 # Omarchy runtime state should stay local

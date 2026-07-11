@@ -1,52 +1,74 @@
 # dotfiles
 
-My dotfiles, managed with [GNU Stow](https://www.gnu.org/software/stow/).
+Personal Linux and macOS configuration managed by
+[chezmoi](https://www.chezmoi.io/).
 
-This machine is installed with stow-style symlinks such as
-`~/.config/fish -> ~/repos/dotfiles/fish/.config/fish`. Keep those package
-directories present so existing configs do not become broken symlinks.
+## Install
 
-The `dot_config/` tree contains chezmoi/Omarchy source-state configs from a
-separate Linux setup. It is not used by `install.sh` on this Mac.
-
-## Setup on a new device
+Install chezmoi first:
 
 ```bash
-# 1. Install stow
 # macOS
-brew install stow
+brew install chezmoi
 
-# Debian/Ubuntu
-sudo apt install stow
-
-# 2. Clone and install
-git clone https://github.com/nikhil-sharma-b/dotfiles ~/repos/dotfiles
-cd ~/repos/dotfiles
-./install.sh
+# Arch Linux
+sudo pacman -S chezmoi
 ```
 
-The install script auto-detects the OS and stows the right packages.
-
-## Packages
-
-| Package   | What                 | Devices |
-|-----------|----------------------|---------|
-| git       | `.gitconfig`         | all     |
-| fish      | Fish shell config    | all     |
-| zsh       | Zsh config           | all     |
-| tmux      | Tmux config          | all     |
-| nvim      | Neovim config        | all     |
-| lazygit   | Lazygit config       | all     |
-| kitty     | Kitty terminal       | all     |
-| ohmyposh  | Oh My Posh theme     | all     |
-| claude    | Claude Code settings | macOS   |
-| karabiner | Karabiner-Elements   | macOS   |
-| kanata    | Kanata config        | macOS   |
-
-## Manual stowing
+Initialize with the canonical source location, preview, then apply:
 
 ```bash
-cd ~/repos/dotfiles
-stow -t "$HOME" <package>       # install
-stow -t "$HOME" -D <package>    # uninstall
+chezmoi --source "$HOME/repos/dotfiles" init \
+  https://github.com/nikhil-sharma-b/dotfiles.git
+chezmoi doctor
+chezmoi diff
+chezmoi apply
 ```
+
+For an existing clone:
+
+```bash
+chezmoi --source "$HOME/repos/dotfiles" init
+```
+
+## Layout
+
+Shared configuration lives under `dot_config/`. Full Fish, Kitty, Tmux, and
+Kanata variants live in `.chezmoitemplates/` and are selected by OS.
+
+Linux-only configuration:
+
+- Hyprland and Waybar
+- systemd user units
+- Omarchy-safe user configuration
+
+macOS-only configuration:
+
+- AeroSpace and Karabiner
+- Claude settings and skill links
+- Zsh and macOS Kanata files
+
+Machine-generated state, backups, Tmux plugins, and Omarchy runtime theme
+links are excluded.
+
+## Workflow
+
+```bash
+# See source path and managed files
+chezmoi source-path
+chezmoi managed
+
+# Import a changed live file
+chezmoi re-add ~/.config/nvim/init.lua
+
+# Edit through chezmoi
+chezmoi edit ~/.config/tmux/tmux.conf
+
+# Review and apply
+chezmoi diff
+chezmoi apply
+```
+
+Do not edit `~/.local/share/omarchy/`. Track only user-owned configuration.
+After Hyprland changes, run `hyprctl reload` and `hyprctl configerrors`. After
+Waybar changes, run `omarchy restart waybar`.

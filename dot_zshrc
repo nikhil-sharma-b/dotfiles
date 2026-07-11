@@ -1,27 +1,29 @@
 
 # fnm
-FNM_PATH="/Users/nikhilsharma/Library/Application Support/fnm"
+FNM_PATH="$HOME/Library/Application Support/fnm"
 if [ -d "$FNM_PATH" ]; then
-  export PATH="/Users/nikhilsharma/Library/Application Support/fnm:$PATH"
-  eval "`fnm env`"
+  export PATH="$FNM_PATH:$PATH"
+  eval "$(fnm env)"
 fi
-eval "$(fnm env --use-on-cd --shell zsh)"
+if command -v fnm >/dev/null 2>&1; then
+  eval "$(fnm env --use-on-cd --shell zsh)"
+fi
 export PATH="$PATH:$HOME/Library/Python/3.9/bin"
 
 PATH=~/.console-ninja/.bin:$PATH
 # Added by LM Studio CLI (lms)
-export PATH="$PATH:/Users/nikhilsharma/.lmstudio/bin"
+export PATH="$PATH:$HOME/.lmstudio/bin"
 
-. "$HOME/.langflow/uv/env"
+[ -f "$HOME/.langflow/uv/env" ] && . "$HOME/.langflow/uv/env"
 
 # bun completions
-[ -s "/Users/nikhilsharma/.bun/_bun" ] && source "/Users/nikhilsharma/.bun/_bun"
+[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
 
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
-alias cc="/Users/nikhilsharma/.local/bin/claude --dangerously-skip-permissions --plugin-dir ~/.claude/plugins/codex-commit"
+alias cc="$HOME/.local/bin/claude --dangerously-skip-permissions --plugin-dir ~/.claude/plugins/codex-commit"
 alias co="codex --dangerously-bypass-approvals-and-sandbox"
 export PATH="/Applications/Windsurf.app/Contents/Resources/app/bin:$PATH"
 

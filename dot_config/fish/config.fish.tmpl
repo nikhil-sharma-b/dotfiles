@@ -1,0 +1,5 @@
+{{- if eq .chezmoi.os "darwin" -}}
+{{ includeTemplate "fish-darwin.fish" . }}
+{{- else -}}
+{{ includeTemplate "fish-linux.fish" . }}
+{{- end -}}

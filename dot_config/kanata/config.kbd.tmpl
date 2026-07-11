@@ -1,0 +1,5 @@
+{{- if eq .chezmoi.os "darwin" -}}
+{{ includeTemplate "kanata-darwin.kbd" . }}
+{{- else -}}
+{{ includeTemplate "kanata-linux.kbd" . }}
+{{- end -}}

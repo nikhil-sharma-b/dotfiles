@@ -18,7 +18,9 @@ fish/.config/fish/fish_variables
 karabiner/.config/karabiner/automatic_backups/
 
 # Chezmoi/Omarchy generated files
-dot_config/hypr/*.bak.*
+*.bak.*
 dot_config/nvim/.neoconf.json
 dot_config/fish/fish_variables
 dot_config/fish/completions/
+dot_config/tmux/plugins/
+dot_config/tmux/resurrect/

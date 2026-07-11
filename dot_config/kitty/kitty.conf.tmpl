@@ -1,0 +1,5 @@
+{{- if eq .chezmoi.os "darwin" -}}
+{{ includeTemplate "kitty-darwin.conf" . }}
+{{- else -}}
+{{ includeTemplate "kitty-linux.conf" . }}
+{{- end -}}
