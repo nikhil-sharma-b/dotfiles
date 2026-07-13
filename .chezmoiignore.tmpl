@@ -1,6 +1,12 @@
 # Linux / Omarchy-only config
 README.md
 
+# Legacy stow state retained locally but not managed by chezmoi
+fish/**
+karabiner/**
+nvim/**
+tmux/**
+
 {{- if ne .chezmoi.os "linux" }}
 .config/hypr/**
 .config/nvim/lua/plugins/theme.lua
@@ -11,10 +17,17 @@ README.md
 # macOS-only config
 {{- if ne .chezmoi.os "darwin" }}
 .config/aerospace/**
+.config/fish/functions/theme.fish
+.config/ghostty/themes/Catppuccin Mocha
+.config/ghostty/themes/Rose Pine
 .config/karabiner/**
 .config/kanata/colemak.kbd
 .config/kanata/com.nikhilsharma.kanata.plist
+.config/nvim/lua/plugins/theme-sync.lua
+.config/nvim/colors/theme-sync.lua
+.config/yazi/theme.toml
 .claude/**
+.local/bin/theme-sync
 .zshrc
 {{- end }}
 

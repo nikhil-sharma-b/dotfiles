@@ -31,16 +31,13 @@ set -gx GIT_EDITOR nvim
 set -gx GPG_TTY (tty)
 set fish_greeting ""
 
-# FZF theming (Catppuccin Mocha)
-set -gx FZF_DEFAULT_OPTS "\
---color=bg+:#313244,bg:#1e1e2e,spinner:#f5e0dc,hl:#f38ba8 \
---color=fg:#cdd6f4,header:#f38ba8,info:#cba6f7,pointer:#f5e0dc \
---color=marker:#b4befe,fg+:#cdd6f4,prompt:#cba6f7,hl+:#f38ba8 \
---color=selected-bg:#45475a \
---height=20 \
---reverse \
---bind 'change:first' \
---multi"
+# Terminal tool theme generated from the selected Ghostty theme.
+set -l theme_env "$HOME/.config/theme-sync/generated/fish.fish"
+if test -r "$theme_env"
+    source "$theme_env"
+else
+    set -gx FZF_DEFAULT_OPTS "--height=20 --reverse --bind 'change:first' --multi"
+end
 
 # Bun
 set -gx BUN_INSTALL "$HOME/.bun"
@@ -94,9 +91,9 @@ if type -q zoxide
     zoxide init --cmd cd fish | source
 end
 
-# oh-my-posh prompt
-if type -q oh-my-posh
-    oh-my-posh init fish --config "$HOME/.config/ohmyposh/base.toml" | source
+# Starship prompt
+if type -q starship
+    starship init fish | source
 end
 
 # langflow uv env

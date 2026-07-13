@@ -1,0 +1,439 @@
+#!/usr/bin/env python3
+
+import argparse
+import html
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+
+HEX_COLOR = re.compile(r"^#?([0-9a-fA-F]{6})$")
+
+
+def normalize_color(value):
+    match = HEX_COLOR.match(value)
+    return f"#{match.group(1).lower()}" if match else None
+
+
+def atomic_write(path, content):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile("w", dir=path.parent, delete=False) as handle:
+        handle.write(content)
+        temporary = Path(handle.name)
+    temporary.chmod(0o644)
+    temporary.replace(path)
+
+
+def selected_theme(selection_file):
+    if not selection_file.is_file():
+        raise RuntimeError("No Ghostty theme selected. Run `theme` and press `w` to save one.")
+
+    for raw_line in selection_file.read_text().splitlines():
+        key, separator, value = raw_line.partition("=")
+        if separator and key.strip() == "theme":
+            value = value.strip().strip('"')
+            if value:
+                if value.startswith(("dark:", "light:")):
+                    raise RuntimeError("Separate light/dark Ghostty theme pairs are not supported")
+                return value
+    raise RuntimeError(f"No theme entry found in {selection_file}")
+
+
+def find_theme(theme_name, config_home):
+    user_theme = config_home / "ghostty" / "themes" / theme_name
+    if user_theme.is_file():
+        return user_theme
+    if not shutil.which("ghostty"):
+        raise RuntimeError(f"Ghostty is required to find theme: {theme_name}")
+
+    result = subprocess.run(
+        ["ghostty", "+list-themes", "--plain", "--path"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    pattern = re.compile(r"^(.*) \([^()]+\) (/.+)$")
+    for line in result.stdout.splitlines():
+        match = pattern.match(line)
+        if match and match.group(1) == theme_name:
+            path = Path(match.group(2))
+            if path.is_file():
+                return path
+    raise RuntimeError(f"Ghostty theme not found: {theme_name}")
+
+
+def parse_theme(path):
+    colors = {}
+    palette = {}
+    for raw_line in path.read_text().splitlines():
+        key, separator, value = raw_line.partition("=")
+        if not separator:
+            continue
+        key = key.strip()
+        value_parts = value.strip().split()
+        if not value_parts:
+            continue
+        value = value_parts[0]
+        if key == "palette":
+            index, palette_separator, color = value.partition("=")
+            normalized = normalize_color(color)
+            try:
+                palette_index = int(index, 0)
+            except ValueError:
+                continue
+            if palette_separator and normalized:
+                palette[palette_index] = normalized
+        elif key in {
+            "background",
+            "foreground",
+            "cursor-color",
+            "cursor-text",
+            "selection-background",
+            "selection-foreground",
+        }:
+            normalized = normalize_color(value)
+            if normalized:
+                colors[key] = normalized
+
+    missing = [str(index) for index in range(16) if index not in palette]
+    if missing or "background" not in colors or "foreground" not in colors:
+        details = []
+        if missing:
+            details.append("palette " + ", ".join(missing))
+        if "background" not in colors:
+            details.append("background")
+        if "foreground" not in colors:
+            details.append("foreground")
+        raise RuntimeError(f"Theme {path.name} lacks required colors: {'; '.join(details)}")
+
+    colors["cursor-color"] = colors.get("cursor-color", colors["foreground"])
+    colors["cursor-text"] = colors.get("cursor-text", colors["background"])
+    colors["selection-background"] = colors.get("selection-background", palette[8])
+    colors["selection-foreground"] = colors.get("selection-foreground", colors["foreground"])
+    return colors, palette
+
+
+def luminance(color):
+    channels = [int(color[index : index + 2], 16) / 255 for index in (1, 3, 5)]
+    channels = [value / 12.92 if value <= 0.04045 else ((value + 0.055) / 1.055) ** 2.4 for value in channels]
+    return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]
+
+
+def generate_kitty(colors, palette):
+    lines = [
+        f"background {colors['background']}",
+        f"foreground {colors['foreground']}",
+        f"cursor {colors['cursor-color']}",
+        f"cursor_text_color {colors['cursor-text']}",
+        f"selection_background {colors['selection-background']}",
+        f"selection_foreground {colors['selection-foreground']}",
+    ]
+    lines.extend(f"color{index} {palette[index]}" for index in range(16))
+    return "\n".join(lines) + "\n"
+
+
+def generate_lazygit(colors, palette):
+    return f"""gui:
+  theme:
+    activeBorderColor: [\"{palette[4]}\", bold]
+    inactiveBorderColor: [\"{palette[8]}\"]
+    optionsTextColor: [\"{palette[6]}\"]
+    selectedLineBgColor: [\"{colors['selection-background']}\"]
+    cherryPickedCommitBgColor: [\"{palette[8]}\"]
+    cherryPickedCommitFgColor: [\"{palette[4]}\"]
+    unstagedChangesColor: [\"{palette[1]}\"]
+    defaultFgColor: [\"{colors['foreground']}\"]
+    searchingActiveBorderColor: [\"{palette[3]}\"]
+  authorColors:
+    \"*\": \"{palette[5]}\"
+"""
+
+
+def generate_yazi(colors, palette):
+    return f"""[app]
+overall = {{ bg = \"{colors['background']}\" }}
+
+[mgr]
+cwd = {{ fg = \"{palette[4]}\", bold = true }}
+find_keyword = {{ fg = \"{palette[3]}\", italic = true, underline = true }}
+find_position = {{ fg = \"{palette[5]}\", bg = \"reset\", italic = true }}
+marker_copied = {{ fg = \"{palette[2]}\", bg = \"{palette[2]}\" }}
+marker_cut = {{ fg = \"{palette[1]}\", bg = \"{palette[1]}\" }}
+marker_marked = {{ fg = \"{palette[5]}\", bg = \"{palette[5]}\" }}
+marker_selected = {{ fg = \"{palette[4]}\", bg = \"{palette[4]}\" }}
+count_copied = {{ fg = \"{colors['background']}\", bg = \"{palette[2]}\" }}
+count_cut = {{ fg = \"{colors['background']}\", bg = \"{palette[1]}\" }}
+count_selected = {{ fg = \"{colors['background']}\", bg = \"{palette[4]}\" }}
+border_symbol = \"|\"
+border_style = {{ fg = \"{palette[8]}\" }}
+syntect_theme = \"~/.config/theme-sync/generated/yazi.tmTheme\"
+
+[tabs]
+active = {{ fg = \"{colors['background']}\", bg = \"{palette[4]}\", bold = true }}
+inactive = {{ fg = \"{colors['foreground']}\", bg = \"{palette[8]}\" }}
+
+[mode]
+normal_main = {{ fg = \"{colors['background']}\", bg = \"{palette[4]}\", bold = true }}
+normal_alt = {{ fg = \"{palette[4]}\", bg = \"{palette[8]}\" }}
+select_main = {{ fg = \"{colors['background']}\", bg = \"{palette[5]}\", bold = true }}
+select_alt = {{ fg = \"{palette[5]}\", bg = \"{palette[8]}\" }}
+unset_main = {{ fg = \"{colors['background']}\", bg = \"{palette[3]}\", bold = true }}
+unset_alt = {{ fg = \"{palette[3]}\", bg = \"{palette[8]}\" }}
+
+[status]
+progress_label = {{ fg = \"{colors['foreground']}\", bold = true }}
+progress_normal = {{ fg = \"{palette[4]}\", bg = \"{palette[8]}\" }}
+progress_error = {{ fg = \"{palette[1]}\", bg = \"{palette[8]}\" }}
+perm_type = {{ fg = \"{palette[4]}\" }}
+perm_read = {{ fg = \"{palette[3]}\" }}
+perm_write = {{ fg = \"{palette[1]}\" }}
+perm_exec = {{ fg = \"{palette[2]}\" }}
+perm_sep = {{ fg = \"{palette[8]}\" }}
+
+[input]
+border = {{ fg = \"{palette[4]}\" }}
+selected = {{ reversed = true }}
+
+[pick]
+border = {{ fg = \"{palette[4]}\" }}
+active = {{ fg = \"{palette[6]}\", bold = true }}
+
+[confirm]
+border = {{ fg = \"{palette[3]}\" }}
+title = {{ fg = \"{palette[3]}\" }}
+btn_yes = {{ reversed = true }}
+
+[tasks]
+border = {{ fg = \"{palette[4]}\" }}
+hovered = {{ fg = \"{palette[6]}\", bold = true }}
+
+[which]
+mask = {{ bg = \"{colors['background']}\" }}
+cand = {{ fg = \"{palette[6]}\" }}
+rest = {{ fg = \"{palette[8]}\" }}
+desc = {{ fg = \"{palette[5]}\" }}
+separator = \"  \"
+separator_style = {{ fg = \"{palette[8]}\" }}
+
+[help]
+on = {{ fg = \"{palette[6]}\" }}
+run = {{ fg = \"{palette[5]}\" }}
+desc = {{ fg = \"{palette[8]}\" }}
+hovered = {{ bg = \"{colors['selection-background']}\", bold = true }}
+footer = {{ fg = \"{colors['foreground']}\", bg = \"{palette[8]}\" }}
+
+[notify]
+title_info = {{ fg = \"{palette[4]}\" }}
+title_warn = {{ fg = \"{palette[3]}\" }}
+title_error = {{ fg = \"{palette[1]}\", bold = true }}
+
+[filetype]
+rules = [
+  {{ mime = \"image/*\", fg = \"{palette[6]}\" }},
+  {{ mime = \"{{audio,video}}/*\", fg = \"{palette[3]}\" }},
+  {{ mime = \"application/*zip\", fg = \"{palette[5]}\" }},
+  {{ mime = \"application/x-{{tar,bzip*,7z-compressed,xz,rar}}\", fg = \"{palette[5]}\" }},
+  {{ mime = \"application/{{pdf,doc,rtf}}\", fg = \"{palette[1]}\" }},
+  {{ url = \"*/\", fg = \"{palette[4]}\", bold = true }},
+]
+"""
+
+
+def generate_tmux(colors, palette):
+    return f"""set -g status-style \"bg={colors['background']},fg={colors['foreground']}\"
+set -g message-style \"bg={palette[4]},fg={colors['background']}\"
+set -g message-command-style \"bg={palette[4]},fg={colors['background']}\"
+set -g mode-style \"bg={palette[4]},fg={colors['background']}\"
+set -g pane-border-style \"fg={palette[8]}\"
+set -g pane-active-border-style \"fg={palette[4]}\"
+set -g window-status-style \"fg={palette[8]}\"
+set -g window-status-current-style \"fg={palette[4]},bold\"
+set -g status-left-style \"bg={palette[4]},fg={colors['background']},bold\"
+set -g status-right-style \"fg={palette[6]}\"
+set -g status-left \"#[bg={palette[4]},fg={colors['background']},bold] #S #[default]\"
+set -g status-right \"#[fg={palette[6]}]#{{pane_current_command}} #[fg={palette[8]}]#{{b:pane_current_path}} \"
+set -g window-status-format \"#[fg={palette[8]}] #I:#W \"
+set -g window-status-current-format \"#[fg={palette[4]},bold] #I:#W \"
+"""
+
+
+def generate_tmtheme(theme_name, colors, palette):
+    name = html.escape(theme_name)
+    return f"""<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
+<plist version=\"1.0\">
+<dict>
+  <key>name</key><string>{name}</string>
+  <key>settings</key>
+  <array>
+    <dict><key>settings</key><dict>
+      <key>background</key><string>{colors['background']}</string>
+      <key>caret</key><string>{colors['cursor-color']}</string>
+      <key>foreground</key><string>{colors['foreground']}</string>
+      <key>selection</key><string>{colors['selection-background']}</string>
+    </dict></dict>
+    <dict><key>scope</key><string>comment</string><key>settings</key><dict><key>foreground</key><string>{palette[8]}</string><key>fontStyle</key><string>italic</string></dict></dict>
+    <dict><key>scope</key><string>string</string><key>settings</key><dict><key>foreground</key><string>{palette[2]}</string></dict></dict>
+    <dict><key>scope</key><string>constant.numeric, constant.language</string><key>settings</key><dict><key>foreground</key><string>{palette[5]}</string></dict></dict>
+    <dict><key>scope</key><string>keyword, storage</string><key>settings</key><dict><key>foreground</key><string>{palette[1]}</string></dict></dict>
+    <dict><key>scope</key><string>entity.name.function, support.function</string><key>settings</key><dict><key>foreground</key><string>{palette[4]}</string></dict></dict>
+    <dict><key>scope</key><string>entity.name.type, support.type</string><key>settings</key><dict><key>foreground</key><string>{palette[3]}</string></dict></dict>
+    <dict><key>scope</key><string>variable, entity.name.tag</string><key>settings</key><dict><key>foreground</key><string>{palette[6]}</string></dict></dict>
+  </array>
+</dict>
+</plist>
+"""
+
+
+def generate_fish(colors, palette):
+    options = (
+        f"--color=bg+:{colors['selection-background']},bg:{colors['background']},"
+        f"spinner:{palette[6]},hl:{palette[1]},fg:{colors['foreground']},"
+        f"header:{palette[1]},info:{palette[5]},pointer:{palette[6]},"
+        f"marker:{palette[5]},fg+:{colors['selection-foreground']},"
+        f"prompt:{palette[4]},hl+:{palette[1]} "
+        "--height=20 --reverse --bind 'change:first' --multi"
+    )
+    return f"""set -gx FZF_DEFAULT_OPTS \"{options}\"
+set -gx BAT_THEME base16
+set -gx LG_CONFIG_FILE \"$HOME/.config/lazygit/config.yml,$HOME/.config/theme-sync/generated/lazygit.yml\"
+"""
+
+
+def generate_nvim(theme_name, colors, palette):
+    mode = "light" if luminance(colors["background"]) > 0.35 else "dark"
+    escaped_name = theme_name.replace("\\", "\\\\").replace('"', '\\"')
+    groups = {
+        "Normal": (colors["foreground"], colors["background"]),
+        "NormalFloat": (colors["foreground"], colors["background"]),
+        "Comment": (palette[8], None),
+        "Constant": (palette[5], None),
+        "String": (palette[2], None),
+        "Character": (palette[2], None),
+        "Number": (palette[5], None),
+        "Boolean": (palette[5], None),
+        "Identifier": (palette[6], None),
+        "Function": (palette[4], None),
+        "Statement": (palette[1], None),
+        "Keyword": (palette[1], None),
+        "Operator": (palette[6], None),
+        "PreProc": (palette[3], None),
+        "Type": (palette[3], None),
+        "Special": (palette[6], None),
+        "Error": (palette[1], colors["background"]),
+        "Todo": (colors["background"], palette[3]),
+        "Visual": (None, colors["selection-background"]),
+        "Search": (colors["background"], palette[3]),
+        "IncSearch": (colors["background"], palette[1]),
+        "LineNr": (palette[8], None),
+        "CursorLineNr": (palette[4], None),
+        "CursorLine": (None, colors["selection-background"]),
+        "StatusLine": (colors["foreground"], palette[8]),
+        "StatusLineNC": (palette[8], colors["background"]),
+        "Pmenu": (colors["foreground"], palette[8]),
+        "PmenuSel": (colors["selection-foreground"], colors["selection-background"]),
+        "FloatBorder": (palette[4], colors["background"]),
+        "Directory": (palette[4], None),
+        "DiagnosticError": (palette[1], None),
+        "DiagnosticWarn": (palette[3], None),
+        "DiagnosticInfo": (palette[4], None),
+        "DiagnosticHint": (palette[6], None),
+        "DiffAdd": (palette[2], colors["background"]),
+        "DiffChange": (palette[3], colors["background"]),
+        "DiffDelete": (palette[1], colors["background"]),
+    }
+    lines = [
+        'vim.cmd("highlight clear")',
+        f'vim.o.background = "{mode}"',
+        f'vim.g.colors_name = "theme-sync"',
+        f'vim.g.theme_sync_name = "{escaped_name}"',
+        "local set = vim.api.nvim_set_hl",
+    ]
+    for group, (foreground, background) in groups.items():
+        values = []
+        if foreground:
+            values.append(f'fg = "{foreground}"')
+        if background:
+            values.append(f'bg = "{background}"')
+        if group in {"CursorLineNr", "Function", "Statement", "Keyword", "Type"}:
+            values.append("bold = true")
+        if group == "Comment":
+            values.append("italic = true")
+        lines.append(f'set(0, "{group}", {{ {", ".join(values)} }})')
+    return "\n".join(lines) + "\n"
+
+
+def reload_tools(generated):
+    reloaded = []
+    if shutil.which("tmux"):
+        server = subprocess.run(
+            ["tmux", "has-session"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False
+        )
+        result = subprocess.run(["tmux", "source-file", str(generated / "tmux.conf")], check=False) if server.returncode == 0 else None
+        if result and result.returncode == 0:
+            reloaded.append("tmux")
+    if shutil.which("kitten") and os.environ.get("KITTY_WINDOW_ID"):
+        result = subprocess.run(
+            ["kitten", "@", "set-colors", "--all", str(generated / "kitty.conf")],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+        if result.returncode == 0:
+            reloaded.append("Kitty")
+    return reloaded
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Sync terminal tool colors from a Ghostty theme")
+    parser.add_argument("theme", nargs="?", help="Ghostty theme name; omit to use Ghostty's saved selection")
+    parser.add_argument("--config-home", type=Path, default=Path.home() / ".config", help=argparse.SUPPRESS)
+    parser.add_argument("--selection-file", type=Path, help=argparse.SUPPRESS)
+    parser.add_argument("--no-reload", action="store_true", help="Generate files without reloading tools")
+    args = parser.parse_args()
+
+    config_home = args.config_home.expanduser()
+    if args.selection_file:
+        selection_file = args.selection_file.expanduser()
+    elif config_home == Path.home() / ".config":
+        selection_file = Path.home() / "Library/Application Support/com.mitchellh.ghostty/auto/theme.ghostty"
+    else:
+        selection_file = config_home / "ghostty" / "auto" / "theme.ghostty"
+    generated = config_home / "theme-sync" / "generated"
+
+    theme_name = args.theme or selected_theme(selection_file)
+    theme_path = find_theme(theme_name, config_home)
+    colors, palette = parse_theme(theme_path)
+
+    if args.theme:
+        atomic_write(selection_file, f"theme = {theme_name}\n")
+
+    outputs = {
+        generated / "kitty.conf": generate_kitty(colors, palette),
+        generated / "lazygit.yml": generate_lazygit(colors, palette),
+        generated / "yazi.toml": generate_yazi(colors, palette),
+        generated / "yazi.tmTheme": generate_tmtheme(theme_name, colors, palette),
+        generated / "tmux.conf": generate_tmux(colors, palette),
+        generated / "fish.fish": generate_fish(colors, palette),
+        generated / "nvim.lua": generate_nvim(theme_name, colors, palette),
+        config_home / "theme-sync" / "selected-theme": theme_name + "\n",
+    }
+    for path, content in outputs.items():
+        atomic_write(path, content)
+
+    reloaded = [] if args.no_reload else reload_tools(generated)
+    suffix = f"; reloaded {', '.join(reloaded)}" if reloaded else ""
+    print(f"Applied {theme_name}{suffix}")
+    print("Reload Ghostty with Cmd+Shift+,; restart Kitty, LazyGit, and Yazi if open.")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (OSError, RuntimeError, subprocess.CalledProcessError) as error:
+        print(f"theme-sync: {error}", file=sys.stderr)
+        raise SystemExit(1)

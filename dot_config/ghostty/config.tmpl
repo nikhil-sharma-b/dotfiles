@@ -1,12 +1,19 @@
 {{- if eq .chezmoi.os "linux" }}
 # Dynamic Omarchy theme colors
 config-file = ?"~/.config/omarchy/current/theme/ghostty.conf"
+{{- else if eq .chezmoi.os "darwin" }}
+# Theme selected by `theme` / `ghostty +list-themes`.
+config-file = ?"{{ .chezmoi.homeDir }}/Library/Application Support/com.mitchellh.ghostty/auto/theme.ghostty"
 {{- end }}
 
 # Font
+{{- if eq .chezmoi.os "darwin" }}
+font-family = "JetBrainsMono Nerd Font Mono"
+{{- else }}
 font-family = "JetBrainsMono Nerd Font"
+{{- end }}
 font-style = Regular
-font-size = 9
+font-size = 16
 
 # Window
 window-theme = ghostty
@@ -26,6 +33,10 @@ shell-integration-features = no-cursor,ssh-env
 # Keyboard bindings
 keybind = shift+insert=paste_from_clipboard
 keybind = control+insert=copy_to_clipboard
+{{- if eq .chezmoi.os "darwin" }}
+keybind = alt+arrow_left=esc:[1;3D
+keybind = alt+arrow_right=esc:[1;3C
+{{- end }}
 keybind = super+control+shift+alt+arrow_down=resize_split:down,100
 keybind = super+control+shift+alt+arrow_up=resize_split:up,100
 keybind = super+control+shift+alt+arrow_left=resize_split:left,100
@@ -38,6 +49,10 @@ mouse-scroll-multiplier = 0.95
 # Avoid rendering stalls under Hyprland.
 async-backend = epoll
 {{- else if eq .chezmoi.os "darwin" }}
+# Use Fish and match the borderless terminal layout.
+command = /opt/homebrew/bin/fish
+macos-titlebar-style = hidden
+
 # Make Option available as Alt for terminal shortcuts.
 macos-option-as-alt = true
 {{- end }}

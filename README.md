@@ -72,3 +72,21 @@ chezmoi apply
 Do not edit `~/.local/share/omarchy/`. Track only user-owned configuration.
 After Hyprland changes, run `hyprctl reload` and `hyprctl configerrors`. After
 Waybar changes, run `omarchy restart waybar`.
+
+## macOS terminal themes
+
+Run `theme` from Fish to open Ghostty's theme preview. Press `Enter` on the
+highlighted theme, then press `w` to save and exit the preview. The wrapper
+generates matching colors for Kitty, Neovim, LazyGit, Yazi, Tmux, fzf, and
+bat.
+
+Use a theme non-interactively with:
+
+```bash
+theme-sync "Catppuccin Mocha"
+```
+
+Tmux reloads automatically when its server is running. Neovim watches its
+generated colorscheme. Reload Ghostty with `Cmd+Shift+,`; restart open Kitty,
+LazyGit, and Yazi instances. Generated runtime files live under
+`~/.config/theme-sync/` and are not managed by chezmoi.
