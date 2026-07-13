@@ -1,1 +1,0 @@
-/home/nikhil-sharma-b/.config/omarchy/current/theme/neovim.lua

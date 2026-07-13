@@ -3,13 +3,14 @@ README.md
 
 {{- if ne .chezmoi.os "linux" }}
 .config/hypr/**
+.config/nvim/lua/plugins/theme.lua
 .config/waybar/**
 .config/systemd/**
 {{- end }}
 
 # macOS-only config
 {{- if ne .chezmoi.os "darwin" }}
-.aerospace.toml
+.config/aerospace/**
 .config/karabiner/**
 .config/kanata/colemak.kbd
 .config/kanata/com.nikhilsharma.kanata.plist
