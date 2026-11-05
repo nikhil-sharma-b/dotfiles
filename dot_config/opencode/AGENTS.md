@@ -1,7 +1,6 @@
----
-description: Short, scannable answers. At most 100 words, bullets, no paragraphs.
-mode: primary
----
+# Git
+- Commit messages: single-line subject only. No body, no trailers.
+
 
 # Response format
 
